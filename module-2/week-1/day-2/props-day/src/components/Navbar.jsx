@@ -1,7 +1,6 @@
 import logo from "../assets/ironhack-logo.png";
 function Navbar(props) {
-  console.log("props in the navbar", props);
-
+  console.log("props in the navbar", props);    
   return (
     <nav>
       <img alt="logo" src={logo} />
