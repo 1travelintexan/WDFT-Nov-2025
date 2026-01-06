@@ -28,9 +28,9 @@ const AddRecipePage = ({ handleAddRecipe }) => {
         <label>
           Recipe Image:
           <input
-            type="text"
-            value={image}
-            onChange={(event) => setImage(event.target.value)}
+            type="file"
+            name="image"
+            onChange={(event) => setImage(event.target.files[0])}
           />
         </label>
 

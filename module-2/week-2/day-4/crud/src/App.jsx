@@ -35,14 +35,25 @@ function App() {
       //   newRecipe
       // );
       // console.log(data);
-
+      const ourData = new FormData();
+      ourData.append("file", newRecipe.image);
+      ourData.append("upload_preset", "Ironhack");
+      ourData.append("cloud_name", "dnkyulofa");
+      const cloudinaryResponse = await axios.post(
+        "https://api.cloudinary.com/v1_1/dnkyulofa/image/upload",
+        ourData
+      );
+      // console.log("cloudinary res: ", cloudinaryResponse.data.secure_url);
       //************fetch ********** */
       const response = await fetch("https://dummyjson.com/recipes/add", {
         method: "POST",
         headers: {
           "content-type": "application/json",
         },
-        body: JSON.stringify(newRecipe),
+        body: JSON.stringify({
+          ...newRecipe,
+          image: cloudinaryResponse.data.secure_url,
+        }),
       });
       const data = await response.json();
       console.log(data);
