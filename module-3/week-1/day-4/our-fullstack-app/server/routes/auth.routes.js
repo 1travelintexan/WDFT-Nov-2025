@@ -2,53 +2,68 @@ const router = require("express").Router();
 const UserModel = require("../models/User.model");
 
 const bcryptjs = require("bcryptjs");
-
-// a /signup route to create a new user with email, password and username
+const jwt = require("jsonwebtoken");
+const { isAuthenticated } = require("../middlewares/jwt.middleware");
+//route to /signup a new user
 router.post("/signup", async (req, res) => {
+  //destructur the req.body
+  const { email, password } = req.body;
   try {
-    const foundUser = await UserModel.findOne({ email: req.body.email });
-    if (foundUser) {
-      res.status(403).json({ errorMessage: "Email already taken" });
+    const userAlreadyInDB = await UserModel.findOne({ email });
+    if (userAlreadyInDB) {
+      res.status(403).json({ errorMessage: "Invalid Credentials" });
     } else {
-      //generate the salt
       const theSalt = bcryptjs.genSaltSync(12);
-      //generate the hashed password
-      const hashedPassword = bcryptjs.hashSync(req.body.password, theSalt);
-      console.log("the salt", theSalt);
-      console.log({ hashedPassword, password: req.body.password });
-      const createdUser = await UserModel.create({
+      const theHashedPassword = bcryptjs.hashSync(password, theSalt);
+      const hashedUser = {
         ...req.body,
-        password: hashedPassword,
-      });
+        password: theHashedPassword,
+      };
+      const createdUser = await UserModel.create(hashedUser);
       res.status(201).json(createdUser);
     }
-  } catch (err) {
-    console.log(err);
-    res.status(500).json({ errorMessage: err });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ errorMesage: error });
   }
 });
 
-//login route
+//route to /login an existing user
 router.post("/login", async (req, res) => {
   try {
-    const foundUser = await UserModel.findOne({ email: req.body.email });
-    if (!foundUser) {
-      res.status(403).json({ errorMessage: "Email doesnt exist" });
+    const { email, password } = req.body;
+    const userAlreadyInDB = await UserModel.findOne({ email });
+    if (!userAlreadyInDB) {
+      res.status(403).json({ errorMessage: "Invalid Credentials" });
     } else {
-      const doesPasswordMatch = bcryptjs.compareSync(
-        req.body.password,
-        foundUser.password
+      const doesPasswordsMatch = bcryptjs.compareSync(
+        password,
+        userAlreadyInDB.password
       );
-      console.log("Does password match?", doesPasswordMatch);
-      if (!doesPasswordMatch) {
-        res.status(403).json({ errorMessage: "Password incorrect" });
+      if (!doesPasswordsMatch) {
+        res.status(403).json({ errorMessage: "Invalid Credentials" });
       } else {
-        res.status(200).json({ message: "You are now logged in! Nice work" });
+        const payload = { _id: userAlreadyInDB._id };
+        const authToken = jwt.sign(payload, process.env.TOKEN_SECRET, {
+          algorithm: "HS256",
+          expiresIn: "6h",
+        });
+
+        res
+          .status(200)
+          .json({ message: "you are now logged in, nice work", authToken });
       }
     }
-  } catch (err) {
-    console.log(err);
-    res.status(500).json({ errorMessage: err });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ errorMesage: error });
   }
+});
+
+//this route verifies the auth token
+router.get("/verify", isAuthenticated, (req, res) => {
+  res
+    .status(200)
+    .json({ message: "Token is valid :) ", decodedToken: req.payload });
 });
 module.exports = router;
