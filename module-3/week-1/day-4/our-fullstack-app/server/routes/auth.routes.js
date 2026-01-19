@@ -38,7 +38,7 @@ router.post("/login", async (req, res) => {
     } else {
       const doesPasswordsMatch = bcryptjs.compareSync(
         password,
-        userAlreadyInDB.password
+        userAlreadyInDB.password,
       );
       if (!doesPasswordsMatch) {
         res.status(403).json({ errorMessage: "Invalid Credentials" });
@@ -61,9 +61,10 @@ router.post("/login", async (req, res) => {
 });
 
 //this route verifies the auth token
-router.get("/verify", isAuthenticated, (req, res) => {
-  res
-    .status(200)
-    .json({ message: "Token is valid :) ", decodedToken: req.payload });
+router.get("/verify", isAuthenticated, async (req, res) => {
+  const currentLoggedInUser = await UserModel.findById(req.payload._id).select(
+    "-password -email",
+  );
+  res.status(200).json({ message: "Token is valid :) ", currentLoggedInUser });
 });
 module.exports = router;

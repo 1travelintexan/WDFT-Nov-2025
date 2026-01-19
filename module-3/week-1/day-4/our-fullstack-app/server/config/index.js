@@ -26,7 +26,7 @@ module.exports = (app) => {
     cors({
       credentials: true,
       origin: [FRONTEND_URL],
-    })
+    }),
   );
 
   // In development environment the app logs
