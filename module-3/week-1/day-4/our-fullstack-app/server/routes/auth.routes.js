@@ -4,6 +4,7 @@ const UserModel = require("../models/User.model");
 const bcryptjs = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const { isAuthenticated } = require("../middlewares/jwt.middleware");
+const uploader = require("../middlewares/cloudinary.config");
 //route to /signup a new user
 router.post("/signup", async (req, res) => {
   //destructur the req.body
@@ -67,4 +68,27 @@ router.get("/verify", isAuthenticated, async (req, res) => {
   );
   res.status(200).json({ message: "Token is valid :) ", currentLoggedInUser });
 });
+
+//cloudinary route to change the profile image of the user
+router.post(
+  "/update-profile-picture/:userId",
+  uploader.single("imageUrl"),
+  async (req, res) => {
+    console.log("here is the user id", req.params.userId);
+    console.log("here is the req.file", req.file);
+    try {
+      const updatedUser = await UserModel.findByIdAndUpdate(
+        req.params.userId,
+        {
+          profilePicture: req.file.path,
+        },
+        { new: true },
+      ).select("-password");
+      res.status(200).json({ message: "image updated", updatedUser });
+    } catch (error) {
+      console.log(error);
+      res.status(500).json({ errorMesage: error });
+    }
+  },
+);
 module.exports = router;
